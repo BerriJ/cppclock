@@ -1,5 +1,5 @@
-#ifndef cppclock_h
-#define cppclock_h
+#ifndef cpptimer_h
+#define cpptimer_h
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -24,7 +24,7 @@ std::vector<T> remove_duplicates(std::vector<T> vec)
 
 namespace sc = std::chrono;
 
-class CppClock
+class CppTimer
 {
     using hr_clock = sc::high_resolution_clock;
     using keypair = std::pair<std::string, unsigned int>;
@@ -42,8 +42,8 @@ public:
     std::string name; // Name of R object to return
 
     // Init - Set name of R object
-    CppClock() : name("times") {}
-    CppClock(std::string name) : name(name) {}
+    CppTimer() : name("times") {}
+    CppTimer(std::string name) : name(name) {}
 
     // start a timer - save time
     void tic(std::string &&tag)

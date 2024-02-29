@@ -30,7 +30,7 @@ class CppClock
     using keypair = std::pair<std::string, unsigned int>;
 
 private:
-    std::map<keypair, hr_clock::time_point> ticks; // Map of start times
+    std::map<keypair, hr_clock::time_point> tics;  // Map of start times
     std::vector<std::string> tags;                 // Vector of identifiers
     std::vector<unsigned long long int> durations; // Vector of durations
 
@@ -46,17 +46,17 @@ public:
     CppClock(std::string name) : name(name) {}
 
     // start a timer - save time
-    void tick(std::string &&tag)
+    void tic(std::string &&tag)
     {
         keypair key(std::move(tag), omp_get_thread_num());
 
 #pragma omp critical
-        ticks[key] = hr_clock::now();
+        tics[key] = hr_clock::now();
     }
 
     // stop a timer - calculate time difference and save key
     void
-    tock(std::string &&tag)
+    toc(std::string &&tag)
     {
         keypair key(std::move(tag), omp_get_thread_num());
 
@@ -64,7 +64,7 @@ public:
         {
             durations.push_back(
                 sc::duration_cast<sc::microseconds>(
-                    hr_clock::now() - ticks[key])
+                    hr_clock::now() - tics[key])
                     .count());
             tags.push_back(std::move(key.first));
         }
@@ -116,7 +116,7 @@ public:
             data[tag] = std::make_tuple(mean, M2, count);
         }
 
-        ticks.clear();
+        tics.clear();
         tags.clear();
         durations.clear();
     }

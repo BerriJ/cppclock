@@ -1,1 +1,3 @@
-# cppclock
+# cpptimer
+
+Docs are coming soon.

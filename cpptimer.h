@@ -10,16 +10,31 @@
 #include <vector>
 #include <map>
 
+// Language specific functions (currently warnings)
+#include <chameleon.h>
+
 #ifndef _OPENMP
 inline int omp_get_thread_num() { return 0; }
 #endif
 
+// Helper functions
+
+// Get all unique elements of a std::vector
 template <typename T>
 std::vector<T> remove_duplicates(std::vector<T> vec)
 {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
     return (vec);
+}
+
+// Retrieve adress of value from a std::map or retreive nullptr if not found
+template <typename Map, typename Key>
+auto value(Map &m, const Key &key)
+{
+    auto it = m.find(key);
+
+    return it == m.end() ? nullptr : std::addressof(it->second);
 }
 
 namespace sc = std::chrono;
@@ -39,11 +54,13 @@ protected:
     std::map<std::string, std::tuple<double, double, unsigned long int>> data;
 
 public:
-    std::string name; // Name of R object to return
+    std::string name = "times"; // Name of R object to return
+    bool verbose = true;        // Print warnings about not stopped timers
 
-    // Init - Set name of R object
-    CppTimer() : name("times") {}
+    CppTimer() {}
     CppTimer(std::string name) : name(name) {}
+    CppTimer(bool verbose) : verbose(verbose) {}
+    CppTimer(std::string name, bool verbose) : name(name), verbose(verbose) {}
 
     // start a timer - save time
     void tic(std::string &&tag)
@@ -58,21 +75,54 @@ public:
     void
     toc(std::string &&tag)
     {
+
         keypair key(std::move(tag), omp_get_thread_num());
 
-#pragma omp critical
+        // This construct is used to have a single lookup in the map
+        // See https://stackoverflow.com/a/31806386/9551847
+        auto *command = value(tics, key);
+
+        if (command == nullptr)
         {
-            durations.push_back(
-                sc::duration_cast<sc::microseconds>(
-                    hr_clock::now() - tics[key])
-                    .count());
-            tags.push_back(std::move(key.first));
+            if (verbose)
+            {
+                std::string msg;
+                msg += "Timer \"" + key.first + "\" not started yet. \n";
+                msg += "Use tic(\"" + key.first + "\") to start the timer.";
+                chameleon::warn(msg);
+            }
+            return;
+        }
+        else
+        {
+
+#pragma omp critical
+            {
+                durations.push_back(
+                    sc::duration_cast<sc::microseconds>(
+                        hr_clock::now() - std::move(*command))
+                        .count());
+                tics.erase(key);
+                tags.push_back(std::move(key.first));
+            }
         }
     }
 
     // Pass data to R / Python
     void aggregate()
     {
+        // Warn about all timers not being stopped
+        if (verbose)
+        {
+            for (auto const &tic : tics)
+            {
+                std::string tic_tag = tic.first.first;
+                std::string msg;
+                msg += "Timer \"" + tic_tag + "\" not stopped yet. \n";
+                msg += "Use toc(\"" + tic_tag + "\") to stop the timer.";
+                chameleon::warn(msg);
+            }
+        }
 
         // Vector of unique identifiers
         std::vector<std::string> unique_tags = remove_duplicates(tags);
@@ -116,13 +166,15 @@ public:
             data[tag] = std::make_tuple(mean, M2, count);
         }
 
-        tics.clear();
         tags.clear();
         durations.clear();
     }
 
     void reset()
     {
+        tics.clear();
+        durations.clear();
+        tags.clear();
         data.clear();
     }
 };

@@ -108,6 +108,23 @@ public:
         }
     }
 
+    class ScopedTimer
+    {
+    private:
+        CppTimer &clock;
+        std::string tag = "ScopedTimer";
+
+    public:
+        ScopedTimer(CppTimer &clock, std::string tag) : clock(clock), tag(tag)
+        {
+            clock.tic(std::string(tag));
+        }
+        ~ScopedTimer()
+        {
+            clock.toc(std::string(tag));
+        }
+    };
+
     // Pass data to R / Python
     void aggregate()
     {

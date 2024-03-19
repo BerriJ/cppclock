@@ -57,8 +57,11 @@ public:
     std::string name = "times"; // Name of R object to return
     bool verbose = true;        // Print warnings about not stopped timers
 
+    template <typename T>
+    CppTimer(T &&) = delete;
+
     CppTimer() {}
-    CppTimer(std::string name) : name(name) {}
+    CppTimer(const char *name) : name(name) {}
     CppTimer(bool verbose) : verbose(verbose) {}
     CppTimer(std::string name, bool verbose) : name(name), verbose(verbose) {}
 

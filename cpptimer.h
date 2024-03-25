@@ -17,26 +17,6 @@
 inline int omp_get_thread_num() { return 0; }
 #endif
 
-// Helper functions
-
-// Get all unique elements of a std::vector
-template <typename T>
-std::vector<T> remove_duplicates(std::vector<T> vec)
-{
-    std::sort(vec.begin(), vec.end());
-    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-    return (vec);
-}
-
-// Retrieve adress of value from a std::map or retreive nullptr if not found
-template <typename Map, typename Key>
-auto value(Map &m, const Key &key)
-{
-    auto it = m.find(key);
-
-    return it == m.end() ? nullptr : std::addressof(it->second);
-}
-
 namespace sc = std::chrono;
 
 class CppTimer
@@ -85,16 +65,17 @@ public:
 
         // This construct is used to have a single lookup in the map
         // See https://stackoverflow.com/a/31806386/9551847
-        auto *command = value(tics, key);
+        auto it = tics.find(key);
+        auto *address = it == tics.end() ? nullptr : std::addressof(it->second);
 
-        if (command == nullptr)
+        if (address == nullptr)
         {
             if (verbose)
             {
                 std::string msg;
                 msg += "Timer \"" + key.first + "\" not started yet. \n";
                 msg += "Use tic(\"" + key.first + "\") to start the timer.";
-                chameleon::warn(msg);
+                warn(msg);
             }
             return;
         }
@@ -105,7 +86,7 @@ public:
             {
                 durations.push_back(
                     sc::duration_cast<sc::microseconds>(
-                        hr_clock::now() - std::move(*command))
+                        hr_clock::now() - std::move(*address))
                         .count());
                 tics.erase(key);
                 tags.push_back(std::move(key.first));
@@ -142,12 +123,16 @@ public:
                 std::string msg;
                 msg += "Timer \"" + tic_tag + "\" not stopped yet. \n";
                 msg += "Use toc(\"" + tic_tag + "\") to stop the timer.";
-                chameleon::warn(msg);
+                warn(msg);
             }
         }
 
-        // Vector of unique identifiers
-        std::vector<std::string> unique_tags = remove_duplicates(tags);
+        // Get vector of unique tags
+
+        std::vector<std::string> unique_tags = tags;
+        std::sort(unique_tags.begin(), unique_tags.end());
+        unique_tags.erase(
+            std::unique(unique_tags.begin(), unique_tags.end()), unique_tags.end());
 
         for (unsigned int i = 0; i < unique_tags.size(); i++)
         {

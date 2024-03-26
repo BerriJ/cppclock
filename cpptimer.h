@@ -45,7 +45,7 @@ public:
     CppTimer() {}
     CppTimer(const char *name) : name(name) {}
     CppTimer(bool verbose) : verbose(verbose) {}
-    CppTimer(std::string name, bool verbose) : name(name), verbose(verbose) {}
+    CppTimer(const char *name, bool verbose) : name(name), verbose(verbose) {}
 
     // start a timer - save time
     void tic(std::string &&tag)

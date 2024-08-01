@@ -34,8 +34,7 @@ protected:
   std::map<std::string, std::tuple<double, double, unsigned long int>> data;
 
 public:
-  std::string name = "times"; // Name of R object to return
-  bool verbose = true;        // Print warnings about not stopped timers
+  bool verbose = true; // Print warnings about not stopped timers
 
   // This ensures that there are no implicit conversions in the constructors
   // That means, the types must exactly match the constructor signature
@@ -43,9 +42,7 @@ public:
   CppTimer(T &&) = delete;
 
   CppTimer() {}
-  CppTimer(const char *name) : name(name) {}
   CppTimer(bool verbose) : verbose(verbose) {}
-  CppTimer(const char *name, bool verbose) : name(name), verbose(verbose) {}
 
   // start a timer - save time
   void tic(std::string &&tag)

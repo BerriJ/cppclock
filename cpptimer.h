@@ -45,7 +45,7 @@ public:
   CppTimer(bool verbose) : verbose(verbose) {}
 
   // start a timer - save time
-  void tic(std::string &&tag)
+  void tic(std::string &&tag = "tictoc")
   {
     keypair key(std::move(tag), omp_get_thread_num());
 
@@ -55,7 +55,7 @@ public:
 
   // stop a timer - calculate time difference and save key
   void
-  toc(std::string &&tag)
+  toc(std::string &&tag = "tictoc")
   {
 
     keypair key(std::move(tag), omp_get_thread_num());
@@ -95,10 +95,10 @@ public:
   {
   private:
     CppTimer &clock;
-    std::string tag = "ScopedTimer";
+    std::string tag;
 
   public:
-    ScopedTimer(CppTimer &clock, std::string tag) : clock(clock), tag(tag)
+    ScopedTimer(CppTimer &clock, std::string tag = "scoped") : clock(clock), tag(tag)
     {
       clock.tic(std::string(tag));
     }

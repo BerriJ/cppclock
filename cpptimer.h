@@ -25,15 +25,16 @@ class CppTimer
   using keypair = std::pair<std::string, unsigned int>;
 
 private:
-  std::map<keypair, hr_clock::time_point> tics;  // Map of start times
-  std::vector<std::string> tags;                 // Vector of identifiers
-  std::vector<unsigned long long int> durations; // Vector of durations
+  std::map<keypair, hr_clock::time_point> tics; // Map of start times
 
 protected:
   // Data to be returned: Tag, Mean, SD, Count
   std::map<std::string, std::tuple<double, double, unsigned long int>> data;
 
 public:
+  std::vector<std::string> tags;                 // Vector of identifiers
+  std::vector<unsigned long long int> durations; // Vector of durations
+
   bool verbose = true; // Print warnings about not stopped timers
 
   // This ensures that there are no implicit conversions in the constructors

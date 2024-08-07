@@ -82,7 +82,7 @@ public:
 #pragma omp critical
       {
         durations.push_back(
-            sc::duration_cast<sc::microseconds>(
+            sc::duration_cast<sc::nanoseconds>(
                 hr_clock::now() - std::move(*address))
                 .count());
         tics.erase(key);

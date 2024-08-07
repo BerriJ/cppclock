@@ -138,19 +138,19 @@ public:
       std::string tag = unique_tags[i];
 
       unsigned long int count;
-      double mean, M2;
+      double mean, sst; // mean and sum of squared total deviations
 
       // Init
       if (data.count(tag) == 0)
       {
         count = 0;
         mean = 0;
-        M2 = 0;
+        sst = 0;
       }
       else
       {
         mean = std::get<0>(data[tag]);
-        M2 = std::get<1>(data[tag]);
+        sst = std::get<1>(data[tag]);
         count = std::get<2>(data[tag]);
       }
 
@@ -163,12 +163,12 @@ public:
           count++;
           double delta = durations[j] - mean;
           mean += delta / count;
-          M2 += delta * (durations[j] - mean);
+          sst += delta * (durations[j] - mean);
         }
       }
 
-      // Save
-      data[tag] = std::make_tuple(mean, M2, count);
+      // Save mean, variance and count
+      data[tag] = std::make_tuple(mean, sst / count, count);
     }
 
     tags.clear();

@@ -95,22 +95,22 @@ public:
   class ScopedTimer
   {
   private:
-    CppTimer &clock;
+    CppTimer &timer;
     std::string tag;
 
   public:
-    ScopedTimer(CppTimer &clock, std::string tag = "scoped") : clock(clock), tag(tag)
+    ScopedTimer(CppTimer &timer, std::string tag = "scoped") : timer(timer), tag(tag)
     {
-      clock.tic(std::string(tag));
+      timer.tic(std::string(tag));
     }
     ~ScopedTimer()
     {
-      clock.toc(std::string(tag));
+      timer.toc(std::string(tag));
     }
   };
 
   // Pass data to R / Python
-  void aggregate()
+  std::map<std::string, std::tuple<double, double, unsigned long int>> aggregate()
   {
     // Warn about all timers not being stopped
     if (verbose)
@@ -173,6 +173,8 @@ public:
 
     tags.clear();
     durations.clear();
+
+    return (data);
   }
 
   void reset()

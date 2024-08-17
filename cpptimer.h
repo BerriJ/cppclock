@@ -166,7 +166,8 @@ public:
       }
 
       // Save mean, variance and count
-      data[tag] = std::make_tuple(mean, sst / std::max(count - 1, ulong(1)), count);
+      unsigned long int one = 1;
+      data[tag] = std::make_tuple(mean, sst / std::max(count - 1, one), count);
     }
 
     tags.clear();

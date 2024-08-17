@@ -32,8 +32,8 @@ protected:
   std::map<std::string, std::tuple<double, double, unsigned long int>> data;
 
 public:
-  std::vector<std::string> tags;                 // Vector of identifiers
-  std::vector<unsigned long long int> durations; // Vector of durations
+  std::vector<std::string> tags; // Vector of identifiers
+  std::vector<double> durations; // Vector of durations
 
   bool verbose = true; // Print warnings about not stopped timers
 
@@ -82,10 +82,8 @@ public:
 
 #pragma omp critical
       {
-        durations.push_back(
-            sc::duration_cast<sc::nanoseconds>(
-                hr_clock::now() - std::move(*address))
-                .count());
+        sc::nanoseconds duration = hr_clock::now() - std::move(*address);
+        durations.push_back(duration.count());
         tics.erase(key);
         tags.push_back(std::move(key.first));
       }

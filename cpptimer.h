@@ -79,10 +79,9 @@ public:
     }
     else
     {
-
+      sc::nanoseconds duration = hr_clock::now() - std::move(*address);
 #pragma omp critical
       {
-        sc::nanoseconds duration = hr_clock::now() - std::move(*address);
         durations.push_back(duration.count());
         tics.erase(key);
         tags.push_back(std::move(key.first));

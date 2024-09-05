@@ -29,7 +29,7 @@ private:
 
 protected:
   // Data to be returned: Tag, Mean, SD, Count
-  std::map<std::string, std::tuple<double, double, unsigned long int>> data;
+  std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> data;
 
 public:
   std::vector<std::string> tags; // Vector of identifiers
@@ -55,8 +55,7 @@ public:
   }
 
   // stop a timer - calculate time difference and save key
-  void
-  toc(std::string &&tag = "tictoc")
+  void toc(std::string &&tag = "tictoc")
   {
 
     keypair key(std::move(tag), omp_get_thread_num());
@@ -106,7 +105,7 @@ public:
     }
   };
 
-  std::map<std::string, std::tuple<double, double, unsigned long int>> aggregate()
+  std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> aggregate()
   {
     // Warn about all timers not being stopped
     if (verbose)
@@ -123,12 +122,13 @@ public:
     // Calculate summary statistics
     for (unsigned long int i = 0; i < tags.size(); i++)
     {
-      double mean = 0, sst = 0; // sst = sum of squared total deviations
+      // sst = sum of squared total deviations
+      double mean = 0, sst = 0, min = std::numeric_limits<double>::max(), max = 0;
       unsigned long int count = 0;
 
       if (data.count(tags[i]) > 0)
       {
-        std::tie(mean, sst, count) = data[tags[i]];
+        std::tie(mean, sst, min, max, count) = data[tags[i]];
       }
 
       // Welford's online algorithm for mean and variance
@@ -136,13 +136,14 @@ public:
       double delta = durations[i] - mean;
       mean += delta / count;
       sst += delta * (durations[i] - mean);
+      min = std::min(min, durations[i]);
+      max = std::max(max, durations[i]);
 
       // Save mean, variance and count
-      data[tags[i]] = std::make_tuple(mean, sst, count);
+      data[tags[i]] = {mean, sst, min, max, count};
     }
 
     tags.clear(), durations.clear();
-
     return (data);
   }
 

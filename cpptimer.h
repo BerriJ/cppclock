@@ -106,7 +106,6 @@ public:
     }
   };
 
-  // Pass data to R / Python
   std::map<std::string, std::tuple<double, double, unsigned long int>> aggregate()
   {
     // Warn about all timers not being stopped
@@ -121,47 +120,25 @@ public:
       }
     }
 
-    // Get vector of unique tags
-
-    std::vector<std::string> unique_tags = tags;
-    std::sort(unique_tags.begin(), unique_tags.end());
-    unique_tags.erase(
-        std::unique(unique_tags.begin(), unique_tags.end()), unique_tags.end());
-
-    for (unsigned int i = 0; i < unique_tags.size(); i++)
+    // Calculate summary statistics
+    for (unsigned long int i = 0; i < tags.size(); i++)
     {
+      double mean = 0, sst = 0; // sst = sum of squared total deviations
+      unsigned long int count = 0;
 
-      std::string tag = unique_tags[i];
-
-      unsigned long int count;
-      double mean, sst; // mean and sum of squared total deviations
-
-      // Init
-      if (data.count(tag) == 0)
+      if (data.count(tags[i]) > 0)
       {
-        count = 0, mean = 0, sst = 0;
-      }
-      else
-      {
-        std::tie(mean, sst, count) = data[tag];
+        std::tie(mean, sst, count) = data[tags[i]];
       }
 
-      // Update
-      for (unsigned long int j = 0; j < tags.size(); j++)
-      {
-        if (tags[j] == tag)
-        {
-          // Welford's online algorithm for mean and variance
-          count++;
-          double delta = durations[j] - mean;
-          mean += delta / count;
-          sst += delta * (durations[j] - mean);
-        }
-      }
+      // Welford's online algorithm for mean and variance
+      count++;
+      double delta = durations[i] - mean;
+      mean += delta / count;
+      sst += delta * (durations[i] - mean);
 
       // Save mean, variance and count
-      unsigned long int one = 1;
-      data[tag] = std::make_tuple(mean, sst / std::max(count - 1, one), count);
+      data[tags[i]] = std::make_tuple(mean, sst, count);
     }
 
     tags.clear(), durations.clear();

@@ -114,10 +114,9 @@ public:
     {
       for (auto const &tic : tics)
       {
-        std::string tic_tag = tic.first.first;
         std::string msg;
-        msg += "Timer \"" + tic_tag + "\" not stopped yet. \n";
-        msg += "Use toc(\"" + tic_tag + "\") to stop the timer.";
+        msg += "Timer \"" + tic.first.first + "\" not stopped yet. \n";
+        msg += "Use toc(\"" + tic.first.first + "\") to stop the timer.";
         warn(msg);
       }
     }
@@ -140,15 +139,11 @@ public:
       // Init
       if (data.count(tag) == 0)
       {
-        count = 0;
-        mean = 0;
-        sst = 0;
+        count = 0, mean = 0, sst = 0;
       }
       else
       {
-        mean = std::get<0>(data[tag]);
-        sst = std::get<1>(data[tag]);
-        count = std::get<2>(data[tag]);
+        std::tie(mean, sst, count) = data[tag];
       }
 
       // Update
@@ -169,18 +164,14 @@ public:
       data[tag] = std::make_tuple(mean, sst / std::max(count - 1, one), count);
     }
 
-    tags.clear();
-    durations.clear();
+    tags.clear(), durations.clear();
 
     return (data);
   }
 
   void reset()
   {
-    tics.clear();
-    durations.clear();
-    tags.clear();
-    data.clear();
+    tics.clear(), durations.clear(), tags.clear(), data.clear();
   }
 };
 

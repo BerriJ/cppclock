@@ -10,32 +10,27 @@
 #include <vector>
 #include <map>
 
-// Language specific functions (currently warnings)
-#include <chameleon.h>
-
 #ifndef _OPENMP
 inline int omp_get_thread_num() { return 0; }
 #endif
 
 namespace sc = std::chrono;
+using hr_clock = sc::high_resolution_clock;
+using keypair = std::pair<std::string, unsigned int>;
 
 class CppTimer
 {
-  using hr_clock = sc::high_resolution_clock;
-  using keypair = std::pair<std::string, unsigned int>;
-
-private:
-  std::map<keypair, hr_clock::time_point> tics; // Map of start times
 
 protected:
+  std::map<keypair, hr_clock::time_point> tics; // Map of start times
+  std::set<std::string> missing_tics;           // Set of missing tics
   // Data to be returned: Tag, Mean, SD, Count
   std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> data;
 
 public:
   std::vector<std::string> tags; // Vector of identifiers
   std::vector<double> durations; // Vector of durations
-
-  bool verbose = true; // Print warnings about not stopped timers
+  bool verbose = true;           // Print warnings about not stopped timers
 
   // This ensures that there are no implicit conversions in the constructors
   // That means, the types must exactly match the constructor signature
@@ -60,30 +55,18 @@ public:
 
     keypair key(std::move(tag), omp_get_thread_num());
 
-    // This construct is used to have a single lookup in the map
-    // See https://stackoverflow.com/a/31806386/9551847
-    auto it = tics.find(key);
-    auto *address = it == tics.end() ? nullptr : std::addressof(it->second);
-
-    if (address == nullptr)
-    {
-      if (verbose)
-      {
-        std::string msg;
-        msg += "Timer \"" + key.first + "\" not started yet. \n";
-        msg += "Use tic(\"" + key.first + "\") to start the timer.";
-        warn(msg);
-      }
-      return;
-    }
-    else
-    {
-      sc::nanoseconds duration = hr_clock::now() - std::move(*address);
 #pragma omp critical
+    {
+      if (auto tic{tics.find(key)}; tic != std::end(tics))
       {
+        sc::nanoseconds duration = hr_clock::now() - std::move(tic->second);
         durations.push_back(duration.count());
-        tics.erase(key);
+        tics.erase(tic);
         tags.push_back(std::move(key.first));
+      }
+      else
+      {
+        missing_tics.insert(std::move(key.first));
       }
     }
   }
@@ -107,17 +90,6 @@ public:
 
   std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> aggregate()
   {
-    // Warn about all timers not being stopped
-    if (verbose)
-    {
-      for (auto const &tic : tics)
-      {
-        std::string msg;
-        msg += "Timer \"" + tic.first.first + "\" not stopped yet. \n";
-        msg += "Use toc(\"" + tic.first.first + "\") to stop the timer.";
-        warn(msg);
-      }
-    }
 
     // Calculate summary statistics
     for (unsigned long int i = 0; i < tags.size(); i++)

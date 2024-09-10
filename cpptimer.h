@@ -29,11 +29,11 @@ private:
 
 protected:
   // Data to be returned: Tag, Mean, SD, Count
-  std::map<std::string, std::tuple<double, double, unsigned long int>> data;
+  std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> data;
 
 public:
-  std::vector<std::string> tags;                 // Vector of identifiers
-  std::vector<unsigned long long int> durations; // Vector of durations
+  std::vector<std::string> tags; // Vector of identifiers
+  std::vector<double> durations; // Vector of durations
 
   bool verbose = true; // Print warnings about not stopped timers
 
@@ -55,8 +55,7 @@ public:
   }
 
   // stop a timer - calculate time difference and save key
-  void
-  toc(std::string &&tag = "tictoc")
+  void toc(std::string &&tag = "tictoc")
   {
 
     keypair key(std::move(tag), omp_get_thread_num());
@@ -79,13 +78,10 @@ public:
     }
     else
     {
-
+      sc::nanoseconds duration = hr_clock::now() - std::move(*address);
 #pragma omp critical
       {
-        durations.push_back(
-            sc::duration_cast<sc::nanoseconds>(
-                hr_clock::now() - std::move(*address))
-                .count());
+        durations.push_back(duration.count());
         tics.erase(key);
         tags.push_back(std::move(key.first));
       }
@@ -109,80 +105,51 @@ public:
     }
   };
 
-  // Pass data to R / Python
-  std::map<std::string, std::tuple<double, double, unsigned long int>> aggregate()
+  std::map<std::string, std::tuple<double, double, double, double, unsigned long int>> aggregate()
   {
     // Warn about all timers not being stopped
     if (verbose)
     {
       for (auto const &tic : tics)
       {
-        std::string tic_tag = tic.first.first;
         std::string msg;
-        msg += "Timer \"" + tic_tag + "\" not stopped yet. \n";
-        msg += "Use toc(\"" + tic_tag + "\") to stop the timer.";
+        msg += "Timer \"" + tic.first.first + "\" not stopped yet. \n";
+        msg += "Use toc(\"" + tic.first.first + "\") to stop the timer.";
         warn(msg);
       }
     }
 
-    // Get vector of unique tags
-
-    std::vector<std::string> unique_tags = tags;
-    std::sort(unique_tags.begin(), unique_tags.end());
-    unique_tags.erase(
-        std::unique(unique_tags.begin(), unique_tags.end()), unique_tags.end());
-
-    for (unsigned int i = 0; i < unique_tags.size(); i++)
+    // Calculate summary statistics
+    for (unsigned long int i = 0; i < tags.size(); i++)
     {
+      // sst = sum of squared total deviations
+      double mean = 0, sst = 0, min = std::numeric_limits<double>::max(), max = 0;
+      unsigned long int count = 0;
 
-      std::string tag = unique_tags[i];
-
-      unsigned long int count;
-      double mean, sst; // mean and sum of squared total deviations
-
-      // Init
-      if (data.count(tag) == 0)
+      if (data.count(tags[i]) > 0)
       {
-        count = 0;
-        mean = 0;
-        sst = 0;
-      }
-      else
-      {
-        mean = std::get<0>(data[tag]);
-        sst = std::get<1>(data[tag]);
-        count = std::get<2>(data[tag]);
+        std::tie(mean, sst, min, max, count) = data[tags[i]];
       }
 
-      // Update
-      for (unsigned long int j = 0; j < tags.size(); j++)
-      {
-        if (tags[j] == tag)
-        {
-          // Welford's online algorithm for mean and variance
-          count++;
-          double delta = durations[j] - mean;
-          mean += delta / count;
-          sst += delta * (durations[j] - mean);
-        }
-      }
+      // Welford's online algorithm for mean and variance
+      count++;
+      double delta = durations[i] - mean;
+      mean += delta / count;
+      sst += delta * (durations[i] - mean);
+      min = std::min(min, durations[i]);
+      max = std::max(max, durations[i]);
 
       // Save mean, variance and count
-      data[tag] = std::make_tuple(mean, sst / count, count);
+      data[tags[i]] = {mean, sst, min, max, count};
     }
 
-    tags.clear();
-    durations.clear();
-
+    tags.clear(), durations.clear();
     return (data);
   }
 
   void reset()
   {
-    tics.clear();
-    durations.clear();
-    tags.clear();
-    data.clear();
+    tics.clear(), durations.clear(), tags.clear(), data.clear();
   }
 };
 

@@ -45,7 +45,7 @@ public:
   // start a timer - save time
   void tic(string &&tag = "tictoc")
   {
-    keypair key(move(tag), omp_get_thread_num());
+    keypair key(std::move(tag), omp_get_thread_num());
 
 #pragma omp critical
     tics[key] = high_resolution_clock::now();
@@ -55,20 +55,21 @@ public:
   void toc(string &&tag = "tictoc")
   {
 
-    keypair key(move(tag), omp_get_thread_num());
+    keypair key(std::move(tag), omp_get_thread_num());
 
 #pragma omp critical
     {
       if (auto tic{tics.find(key)}; tic != end(tics))
       {
-        nanoseconds duration = high_resolution_clock::now() - move(tic->second);
+        nanoseconds duration = high_resolution_clock::now() -
+                               std::move(tic->second);
         durations.push_back(duration.count());
         tic->second = tic->second.min();
-        tags.push_back(move(key.first));
+        tags.push_back(std::move(key.first));
       }
       else
       {
-        missing_tics.insert(move(key.first));
+        missing_tics.insert(std::move(key.first));
       }
     }
   }

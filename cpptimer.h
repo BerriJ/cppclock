@@ -100,9 +100,9 @@ public:
       // sst = sum of squared total deviations
       double mean = 0, sst = 0, min = numeric_limits<double>::max(), max = 0;
       unsigned long int count = 0;
-      if (data.count(tags[i]) > 0)
+      if (auto entry{data.find(tags[i])}; entry != end(data))
       {
-        tie(mean, sst, min, max, count) = data[tags[i]];
+        tie(mean, sst, min, max, count) = entry->second;
       }
       count++;
       double delta = durations[i] - mean;

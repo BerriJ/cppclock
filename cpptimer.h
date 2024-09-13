@@ -25,7 +25,7 @@ class CppTimer
 {
 protected:
   map<keypair, high_resolution_clock::time_point> tics; // Map of start times
-  set<string> missing_tics;                             // Set of missing tics
+  set<string> missing_tics, needless_tocs;              // Set of missing tics
   // Data to be returned: Tag, Mean, SD, Min, Max, Count
   map<string, statistics> data;
 
@@ -105,11 +105,17 @@ public:
         tie(mean, sst, min, max, count) = entry->second;
       }
       count++;
-      double delta = durations[i] - mean;
+      double duration = durations[i];
+      if (duration < 0)
+      {
+        needless_tocs.insert(tags[i]);
+        continue;
+      }
+      double delta = duration - mean;
       mean += delta / count;
-      sst += delta * (durations[i] - mean);
-      min = std::min(min, durations[i]);
-      max = std::max(max, durations[i]);
+      sst += delta * (duration - mean);
+      min = std::min(min, duration);
+      max = std::max(max, duration);
       data[tags[i]] = {mean, sst, min, max, count};
     }
 

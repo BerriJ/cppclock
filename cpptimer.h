@@ -64,7 +64,7 @@ public:
         nanoseconds duration = high_resolution_clock::now() -
                                std::move(tic->second);
         durations.push_back(duration.count());
-        tic->second = tic->second.min();
+        tic->second = tic->second.max();
         tags.push_back(std::move(key.first));
       }
       else
